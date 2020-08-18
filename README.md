@@ -1,4 +1,5 @@
-# kafka
+# kafka安全控制
+# 一、使用SSL管理通讯安全
 ## 1.创建所需ssl证书文件
 ### 脚本
 ```shell
@@ -112,3 +113,77 @@ ssl.truststore.password=test1234
 ### 2.2.3. security.inter.broker.protocol 
 * broker内部通信使用协议，默认和外部通讯协议保持一致，要么保护默认配置或者改为SSL
  ![](https://github.com/lk6678979/image/blob/master/kafka-ssl/kakfa-ssh-7.jpg)
+# 二、使用SASL+ACL对用户进行权限控制(不使用Kerberos)
+注意：CDH只支持Kerberos，否则启动kafka会直接提示
+```
+security.inter.broker.protocol can not be set to SASL_SSL, as Kerberos is not enabled on this Kafka broker.
+```
+# 2.1 配置SASL
+* 1.在broker中选择1个或多个支持的机制启用，kafka目前支持的机制有 GSSAPI 和 PLAIN 。  
+* 2.添加一个JAAS文件来配置选择的 GSSAPI（Kerberos）或 PLANIN。  
+本例中，我们假设有3个用户：admin, reader和writer，其中admin是管理员，reader用户读取Kafka集群中topic数据，而writer用户则负责向Kafka集群写入消息,存放目录：/data/kafka-conf/kafka_cluster_jaas.conf
+```
+KafkaServer {
+　　org.apache.kafka.common.security.plain.PlainLoginModule required
+　　username="admin"
+　　password="admin"
+　　user_admin="admin"
+　　user_reader="reader"
+　　user_writer="writer";
+};
+```
+这个文件，是专门用来做认证的。用户名和密码的格式如下：user_用户名="密码"  
+注意：对于超级用户，这几行是固定的,这里指定的是admin用户密码为123456，密码可自行更改
+```
+username="admin"
+password="123456"
+user_admin="admin"
+```
+* 3.在server.properties配置一个SASL端口，增加至少1个SASL_PLAINTEXT或SASL_SSL到listeners。用逗号分隔：
+```
+ listeners=SASL_PLAINTEXT://host.name:port
+```
+如果使用SASL_SSL，那SSL也必须配置，如果你仅配置SASL端口（或者，如果你需要broker互相使用SASL进行身份验证），那么，确保你设置相同的SASL协议为broker间通讯:
+```
+security.inter.broker.protocol=SASL_PLAINTEXT (or SASL_SSL)
+```
+* 4.在server.properties中启用1个或多个SASL机制:
+```
+sasl.enabled.mechanisms=GSSAPI (,PLAIN)
+```
+注意这里配置PLAIN,如果配置GSSAPI则需要安装Kerberos
+* 5.如果使用SASL做broker之间通信，在server.properties中配置SASL机制：
+```
+sasl.mechanism.inter.broker.protocol=GSSAPI (or PLAIN)
+```
+注意这里配置PLAIN,如果配置GSSAPI则需要安装Kerberos
+* 6.配置实例：
+```
+# 配置ACL入口类
+authorizer.class.name=kafka.security.auth.SimpleAclAuthorizer
+# 本例使用SASL_PLAINTEXT
+listeners=SASL_PLAINTEXT://:9092
+security.inter.broker.protocol= SASL_PLAINTEXT
+sasl.mechanism.inter.broker.protocol=PLAIN
+sasl.enabled.mechanisms=PLAIN
+# 设置本例中admin为超级用户
+super.users=User:admin
+```
+# 2.1 启动
+bin/kafka-server-start.sh 这个是kafka的启动脚本，要使用ACL，需要增加一个参数才行
+有2种方法修改，这里分别介绍一下：
+# 2.1.1 增加环境变量KAFKA_OPTS(推荐)
+先来看一下，默认的bin/kafka-server-start.sh的最后一行
+```
+exec $base_dir/kafka-run-class.sh $EXTRA_ARGS kafka.Kafka "$@"
+```
+只需要在最后一行的上面一行，添加一个环境变量即可
+```
+export KAFKA_OPTS="-Djava.security.auth.login.config=/data/kafka-conf/kafka_cluster_jaas.conf"
+exec $base_dir/kafka-run-class.sh $EXTRA_ARGS kafka.Kafka "$@"
+```
+# 2.1.2 增加参数-Djava.security.auth.login.config
+直接将最后一行修改为
+```
+exec $base_dir/kafka-run-class.sh -Djava.security.auth.login.config=/data/kafka-conf/kafka_cluster_jaas.conf $EXTRA_ARGS kafka.Kafka "$@"
+```
