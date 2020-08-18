@@ -118,9 +118,46 @@ ssl.truststore.password=test1234
 ```
 security.inter.broker.protocol can not be set to SASL_SSL, as Kerberos is not enabled on this Kafka broker.
 ```
-# 2.1 配置SASL
+## 2.1 配置SASL
 * 1.在broker中选择1个或多个支持的机制启用，kafka目前支持的机制有 GSSAPI 和 PLAIN 。  
-* 2.添加一个JAAS文件来配置选择的 GSSAPI（Kerberos）或 PLANIN。  
+* 2.在server.properties配置一个SASL端口，增加至少1个SASL_PLAINTEXT或SASL_SSL到listeners。用逗号分隔：
+```
+ listeners=SASL_PLAINTEXT://host.name:port
+```
+如果使用SASL_SSL，那SSL也必须配置，如果你仅配置SASL端口（或者，如果你需要broker互相使用SASL进行身份验证），那么，确保你设置相同的SASL协议为broker间通讯:
+```
+security.inter.broker.protocol=SASL_PLAINTEXT (or SASL_SSL)
+```
+* 3.在server.properties中启用1个或多个SASL机制:
+```
+sasl.enabled.mechanisms=GSSAPI (,PLAIN)
+```
+注意这里配置PLAIN,如果配置GSSAPI则需要安装Kerberos
+* 4.如果使用SASL做broker之间通信，在server.properties中配置SASL机制：
+```
+sasl.mechanism.inter.broker.protocol=GSSAPI (or PLAIN)
+```
+注意这里配置PLAIN,如果配置GSSAPI则需要安装Kerberos
+* 5.allow.everyone.if.no.acl.found=ture
+该配置的意思是：如果用户没有配置任何acl权限，能否访问数据，默认是false，也就是除了超级用户之外，其他用户无法访问。  
+那么问题就来了，在kafka集群中，其它节点需要同步数据，需要相互访问。节点之间是默认会使用ANONYMOUS的用户名连接集群。在这种情况下，启动kafka集群，必然失败！所以必须设置为true，然后给非超级用户严格控制访问权限
+
+* 6.配置实例：
+```
+# 配置ACL入口类
+authorizer.class.name=kafka.security.auth.SimpleAclAuthorizer
+advertised.listeners=SASL_PLAINTEXT://$advertised_hostname:9092
+# 本例使用SASL_PLAINTEXT
+listeners=SASL_PLAINTEXT://:9092
+security.inter.broker.protocol= SASL_PLAINTEXT
+sasl.mechanism.inter.broker.protocol=PLAIN
+sasl.enabled.mechanisms=PLAIN
+allow.everyone.if.no.acl.found=true
+# 设置本例中admin为超级用户
+super.users=User:admin
+```
+## 2.1 启动服务端
+### 2.1.1 添加一个JAAS文件来配置选择的 GSSAPI（Kerberos）或 PLANIN。  
 本例中，我们假设有3个用户：admin, reader和writer，其中admin是管理员，reader用户读取Kafka集群中topic数据，而writer用户则负责向Kafka集群写入消息,存放目录：/data/kafka-conf/kafka_cluster_jaas.conf
 ```
 KafkaServer {
@@ -139,40 +176,10 @@ username="admin"
 password="123456"
 user_admin="admin"
 ```
-* 3.在server.properties配置一个SASL端口，增加至少1个SASL_PLAINTEXT或SASL_SSL到listeners。用逗号分隔：
-```
- listeners=SASL_PLAINTEXT://host.name:port
-```
-如果使用SASL_SSL，那SSL也必须配置，如果你仅配置SASL端口（或者，如果你需要broker互相使用SASL进行身份验证），那么，确保你设置相同的SASL协议为broker间通讯:
-```
-security.inter.broker.protocol=SASL_PLAINTEXT (or SASL_SSL)
-```
-* 4.在server.properties中启用1个或多个SASL机制:
-```
-sasl.enabled.mechanisms=GSSAPI (,PLAIN)
-```
-注意这里配置PLAIN,如果配置GSSAPI则需要安装Kerberos
-* 5.如果使用SASL做broker之间通信，在server.properties中配置SASL机制：
-```
-sasl.mechanism.inter.broker.protocol=GSSAPI (or PLAIN)
-```
-注意这里配置PLAIN,如果配置GSSAPI则需要安装Kerberos
-* 6.配置实例：
-```
-# 配置ACL入口类
-authorizer.class.name=kafka.security.auth.SimpleAclAuthorizer
-# 本例使用SASL_PLAINTEXT
-listeners=SASL_PLAINTEXT://:9092
-security.inter.broker.protocol= SASL_PLAINTEXT
-sasl.mechanism.inter.broker.protocol=PLAIN
-sasl.enabled.mechanisms=PLAIN
-# 设置本例中admin为超级用户
-super.users=User:admin
-```
-# 2.1 启动
+### 2.1.2 启动
 bin/kafka-server-start.sh 这个是kafka的启动脚本，要使用ACL，需要增加一个参数才行
 有2种方法修改，这里分别介绍一下：
-# 2.1.1 增加环境变量KAFKA_OPTS(推荐)
+* 增加环境变量KAFKA_OPTS(推荐)
 先来看一下，默认的bin/kafka-server-start.sh的最后一行
 ```
 exec $base_dir/kafka-run-class.sh $EXTRA_ARGS kafka.Kafka "$@"
@@ -182,7 +189,7 @@ exec $base_dir/kafka-run-class.sh $EXTRA_ARGS kafka.Kafka "$@"
 export KAFKA_OPTS="-Djava.security.auth.login.config=/data/kafka-conf/kafka_cluster_jaas.conf"
 exec $base_dir/kafka-run-class.sh $EXTRA_ARGS kafka.Kafka "$@"
 ```
-# 2.1.2 增加参数-Djava.security.auth.login.config
+* 增加参数-Djava.security.auth.login.config
 直接将最后一行修改为
 ```
 exec $base_dir/kafka-run-class.sh -Djava.security.auth.login.config=/data/kafka-conf/kafka_cluster_jaas.conf $EXTRA_ARGS kafka.Kafka "$@"
