@@ -61,7 +61,7 @@ echo "8.用CA证书给客户器证书签名"
 openssl x509 -req -CA "$CERT_AUTH_FILE" -CAkey $CERT_OUTPUT_PATH/ca.key -in "$CLIENT_CLUSTER_CERT_FILE" \
 -out "${CLIENT_CLUSTER_CERT_FILE}-signed" \
 -days "$DAYS_VALID" -CAcreateserial -passin pass:"$PASSWORD"
-
+ 
 echo "9.将CA证书导入服务端keystore"
 keytool -keystore "$KEY_STORE" -alias CARoot -import -file "$CERT_AUTH_FILE" -storepass "$PASSWORD" -keypass "$PASSWORD" -noprompt
 
