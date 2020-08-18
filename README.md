@@ -99,13 +99,16 @@ ssl.truststore.password=test1234
 * CDH对应配置
 ![](https://github.com/lk6678979/image/blob/master/kafka-ssl/kakfa-ssh-4.png)
 ### 2.2 ssl其他配置
-* ssl.client.auth = none (“required”=>客户端身份验证是必需的，“requested”=>客户端身份验证请求，客户端没有证书仍然可以连接。  
-    如果配置none，那么客户端连接Kafka只用配置truststore
-    如果配置required，那么客户端必须同时配置keystore和truststore
+### 2.2.1 ssl.client.auth
+* required：客户端身份验证是必需的，客户端必须同时配置keystore和truststore
+* node：不启动验证
+* requested：客户端身份验证请求，客户端没有证书仍然可以连接，客户端连接Kafka只用配置truststore
+* CDH配置：
 ![](https://github.com/lk6678979/image/blob/master/kafka-ssl/kakfa-ssh-5.png)
-* ssl.enabled.protocols = TLSv1.2 TLSv1.1 TLSv1 (接收来自客户端列出的SSL协议，注意，不推荐在生产中使用SSL，推荐使用TLS)。
+### 2.2.2. ssl.enabled.protocols = TLSv1.2 TLSv1.1 TLSv1 
+* TLSv1.2 TLSv1.1 TLSv1 ，接收来自客户端列出的SSL协议，注意，不推荐在生产中使用SSL，推荐使用TLS)。
+* CDH不能配置具体协议，只能选择是否启动
 ![](https://github.com/lk6678979/image/blob/master/kafka-ssl/kakfa-ssh-6.png)
-注意：CDH不能配置具体协议，只能选择是否启动
-* 如果你想启用SSL用于broker内部通讯，将以下内容添加到broker配置文件（默认是PLAINTEXT）----不建议开启  
-  security.inter.broker.protocol=SSL (接收来自客户端列出的SSL协议，注意，不推荐在生产中使用SSL，推荐使用TLS)。
+### 2.2.3. security.inter.broker.protocol 
+* broker内部通信使用协议，默认和外部通讯协议保持一致，建议使用PLAINTEXT
  ![](https://github.com/lk6678979/image/blob/master/kafka-ssl/kakfa-ssh-7.jpg)
