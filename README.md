@@ -80,3 +80,32 @@ keytool -keystore "$CLIENT_KEY_STORE" -alias "${CLUSTER_NAME}" -import -file "${
 ![](https://github.com/lk6678979/image/blob/master/kafka-ssl/kakfa-ssh-1.jpg)
 * 客户端文件
 ![](https://github.com/lk6678979/image/blob/master/kafka-ssl/kakfa-ssh-2.jpg)
+## 2.服务端配置
+### 2.1 配置ssl监听
+Kafka Broker支持监听多个端口上的连接，通过server.properteis 配置，最少监听1个端口，用逗号分隔。
+```
+listeners=PLAINTEXT://host.name:port,SSL://host.name:port
+```
+* CDH对应配置
+![](https://github.com/lk6678979/image/blob/master/kafka-ssl/kakfa-ssh-3.png)
+### 2.2 配置ssl文件和密码
+```
+ssl.keystore.location=/data/kafka-ssl/server_cert/kafka.keystore.jks
+ssl.keystore.password=test1234
+ssl.key.password=test1234
+ssl.truststore.location=/data/kafka-ssl/server_cert/kafka.truststore.jks
+ssl.truststore.password=test1234
+```
+* CDH对应配置
+![](https://github.com/lk6678979/image/blob/master/kafka-ssl/kakfa-ssh-4.png)
+### 2.2 ssl其他配置
+* ssl.client.auth = none (“required”=>客户端身份验证是必需的，“requested”=>客户端身份验证请求，客户端没有证书仍然可以连接。  
+    如果配置none，那么客户端连接Kafka只用配置truststore
+    如果配置required，那么客户端必须同时配置keystore和truststore
+![](https://github.com/lk6678979/image/blob/master/kafka-ssl/kakfa-ssh-5.png)
+* ssl.enabled.protocols = TLSv1.2 TLSv1.1 TLSv1 (接收来自客户端列出的SSL协议，注意，不推荐在生产中使用SSL，推荐使用TLS)。
+![](https://github.com/lk6678979/image/blob/master/kafka-ssl/kakfa-ssh-6.png)
+注意：CDH不能配置具体协议，只能选择是否启动
+* 如果你想启用SSL用于broker内部通讯，将以下内容添加到broker配置文件（默认是PLAINTEXT）----不建议开启  
+  security.inter.broker.protocol=SSL (接收来自客户端列出的SSL协议，注意，不推荐在生产中使用SSL，推荐使用TLS)。
+ ![](https://github.com/lk6678979/image/blob/master/kafka-ssl/kakfa-ssh-7.jpg)
