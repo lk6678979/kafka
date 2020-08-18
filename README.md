@@ -81,6 +81,7 @@ keytool -keystore "$CLIENT_KEY_STORE" -alias "${CLUSTER_NAME}" -import -file "${
 ![](https://github.com/lk6678979/image/blob/master/kafka-ssl/kakfa-ssh-1.jpg)
 * 客户端文件
 ![](https://github.com/lk6678979/image/blob/master/kafka-ssl/kakfa-ssh-2.jpg)
+
 ## 2.服务端配置
 ### 2.1 配置ssl监听
 Kafka Broker支持监听多个端口上的连接，通过server.properteis 配置，最少监听1个端口，用逗号分隔。
@@ -113,6 +114,27 @@ ssl.truststore.password=test1234
 ### 2.2.3. security.inter.broker.protocol 
 * broker内部通信使用协议，默认和外部通讯协议保持一致，要么保护默认配置或者改为SSL
  ![](https://github.com/lk6678979/image/blob/master/kafka-ssl/kakfa-ssh-7.jpg)
+ ### 2.2.4. 其他
+* ssl.keystore.type=JKS
+* ssl.truststore.type=JKS
+* ssl.secure.random.implementation=SHA1PRNG
+### 配置案例
+```
+listeners=SSL://localhost:9095
+advertised.listeners=SSL://localhost:9095
+ssl.keystore.location=/Users/smartloli/workspace/ssl/certificates/kafka.keystore
+ssl.keystore.password=ke123456
+ssl.key.password=ke123456
+ssl.truststore.location=/Users/dengjie/workspace/ssl/certificates/kafka.truststore
+ssl.truststore.password=ke123456
+
+ssl.client.auth=required
+ssl.enabled.protocols=TLSv1.2,TLSv1.1,TLSv1
+ssl.keystore.type=JKS 
+ssl.truststore.type=JKS 
+ssl.endpoint.identification.algorithm=HTTPS
+security.inter.broker.protocol=SSL
+```
 # 二、使用SASL+ACL对用户进行权限控制(不使用Kerberos)
 注意：CDH只支持Kerberos，否则启动kafka会直接提示
 ```
