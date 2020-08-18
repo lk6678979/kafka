@@ -110,5 +110,5 @@ ssl.truststore.password=test1234
 * CDH不能配置具体协议，只能选择是否启动
 ![](https://github.com/lk6678979/image/blob/master/kafka-ssl/kakfa-ssh-6.png)
 ### 2.2.3. security.inter.broker.protocol 
-* broker内部通信使用协议，默认和外部通讯协议保持一致，建议使用PLAINTEXT
+* broker内部通信使用协议，默认和外部通讯协议保持一致，要么保护默认配置或者改为SSL
  ![](https://github.com/lk6678979/image/blob/master/kafka-ssl/kakfa-ssh-7.jpg)
