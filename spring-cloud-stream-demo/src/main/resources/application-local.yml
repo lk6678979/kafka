@@ -1,0 +1,69 @@
+spring:
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+  cloud:
+    stream:
+      kafka:
+        bindings:
+          testTopic_in:
+            consumer:
+              autoCommitOffset: true #是否自动提交offset
+              resetOffsets: false  #启动时，是否将消费者的偏移量重置为startOffset提供的值（注意，是每次启动时）
+              startOffset: earliest #新组的量起始偏移
+              enableDlq: false  #设置为true时，它将为消费者发送启用DLQ行为
+              recoveryInterval: 5000  #尝试恢复连接的间隔，以毫秒为单位
+              fetchMaxWaitMs: 5000
+      bindings:
+        testTopic_in: #@Input和@Output的参数字符串
+          binder: kafka   #binders选择一个绑定对象
+          destination: testTopic #kafka中的主题
+          content-type: application/json  #数据格式json
+          group: gtestTopic  #客户端在kafka中的group_id
+          consumer: #消费者参数
+            concurrency: 1  #流入消费者的并发性
+            partitioned: true  #消费者是否接受来自一个分区的生产者数据
+            headerMode: raw #头部机制
+        testTopic_out:
+          binder: kafka
+          destination: testTopic
+          contentType: application/json
+          producer:
+            #            partitionKeyExpression: payload.keyId
+            partitionCount: 1
+            headerMode: raw
+      default-binder: kafka
+      binders:
+        kafka:
+          type: kafka
+          environment:
+            spring:
+              cloud:
+                stream:
+                  kafka:
+                    binder:
+                      brokers: test01:9093,test02:9093,test03:9093
+                      configuration:
+                        max:
+                          poll:
+                            interval:
+                              ms: 60000
+                        security:
+                          protocol: SASL_SSL
+                        sasl:
+                          mechanism: PLAIN
+                          jaas:
+                            config: org.apache.kafka.common.security.plain.PlainLoginModule required username="test001" password="123456";
+                        ssl:
+                          truststore:
+                            type: JKS
+                            location: C:/client-truststore.jks
+                            password: gacnev@kafka@2020
+                          keystore:
+                            type: JKS
+                            location: C:/client-truststore.jks
+                            password: 123456
+                          key:
+                            password: 123456
+                          client:
+                            auth: required

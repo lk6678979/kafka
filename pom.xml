@@ -9,6 +9,7 @@
     <version>1.0.0</version>
     <modules>
         <module>sping-boot-kafka-demo</module>
+        <module>spring-cloud-stream-demo</module>
     </modules>
     <packaging>pom</packaging>
 
